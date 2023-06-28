@@ -395,11 +395,34 @@ No entanto, em order-domain, quero criar mais dois sub-módulos, para separar o 
 ATENÇÃO: Lembrar de remover a versão do maven do pom desses sub-módulos e remover a pasta src de order-domain.
 
 <h2>Estabelecendo a dependência entre os módulos</h2>
+
+### 1 - order-domain-core
 Iniciando pelo módulo order-domain-core. Nada foi colocado de dependência, pois esse módulo deve ser o mais independente possível
 
-Já o order-application-service é dependente de order-domain-core.
+### 2 - order-application-service
+O order-application-service é dependente de order-domain-core.
+```
+    <dependencies>
+        <dependency>
+            <groupId>com.food.ordering.system</groupId>
+            <artifactId>order-domain-core</artifactId>
+        </dependency>
+    </dependencies>
+```
 
-Observação: a versão (<version>1.0-SNAPSHOT</version>) da dependência não vai ser colocada no pom de order-application-service, será colocado no pom da aplicação (food-ordering-system)
+#### Controle de versão dos módulos:
+Observação: Retirar a versão da dependência e atualizar o maven para ver o erro: "com.food.ordering.system:order-domain-core:jar:unknown was not found in..." 
+
+Como está dando erro, eu preciso definir a versão. No entanto, não quero defini-lo aqui. Em vez disso, quero gerenciar todas as versões no arquivo pom.xml base (pacote order-service).
+
+Então, por esse motivo, irei para o pom.xml base e adicionarei essa dependência no gerenciamento de dependências seção.
+
+E para a versão vou usar "project.version" que é 1.0-SNAPSHOT.
+
+Então, por que coloquei essa dependência no gerenciamento de dependências?
+Porque ao colocar uma dependência na seção de gerenciamento, isso vai ajudar a definir a aplicação de dependência com a versão especificada sem realmente baixá-la.
+Quando um submódulo ou serviço requer uma dependência, ele adicionará essa dependência em sua seção de dependências, mas a versão não será necessária pois está definida no arquivo base maven pom.xml.
+
 ```
 <dependencyManagement>
     <dependencies>
@@ -412,4 +435,396 @@ Observação: a versão (<version>1.0-SNAPSHOT</version>) da dependência não v
 </dependencyManagement>
 ```
 
-O mesmo deve ser feito com todos os demais sub-módulos, exceto order-container, pois não será utilizado pelos outros módulos. Ele simplesmente terá uma dependência de todos os módulos para criar um único arquivo jar executável e executá-lo como um arquivo jar.
+O mesmo deve ser feito com todos os demais sub-módulos (order-application-service, order-application, order-dataaccess e order-messaging). 
+Exceto order-container, pois não será utilizado pelos demais módulos.
+Ele simplesmente terá uma dependência de todos os módulos para criar um único arquivo jar executável e executá-lo como um microsserviço. 
+E também criará uma imagem do Docker para ser usada posteriormente na implantação na nuvem.
+```
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.food.ordering.system</groupId>
+                <artifactId>order-domain-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.food.ordering.system</groupId>
+                <artifactId>order-application-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.food.ordering.system</groupId>
+                <artifactId>order-application</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.food.ordering.system</groupId>
+                <artifactId>order-dataaccess</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.food.ordering.system</groupId>
+                <artifactId>order-messaging</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+```
+Com isso temos a centralização do versionamento dos módulos. Vamos então às demais dependências.
+
+### 3 - order-dataacess
+Conforme mencionado durante o projeto de arquitetura, este módulo terá os adaptadores para as portas de saída da camada de domínio. 
+Então ele irá implementar as interfaces da camada de domínio e deve ter dependência para o serviço: order-application-service.
+```
+    <dependencies>
+        <dependency>
+            <groupId>com.food.ordering.system</groupId>
+            <artifactId>order-application-service</artifactId>
+        </dependency>
+    </dependencies>
+```
+
+### 4 - order-messaging
+Como você pode imaginar, este também terá uma dependência para order-application-service, porque deve implementar as interfaces de mensagens da camada de domínio.
+```
+    <dependencies>
+        <dependency>
+            <groupId>com.food.ordering.system</groupId>
+            <artifactId>order-application-service</artifactId>
+        </dependency>
+    </dependencies>
+```
+
+### 5 - order-application
+A mesma coisa...
+```
+    <dependencies>
+        <dependency>
+            <groupId>com.food.ordering.system</groupId>
+            <artifactId>order-application-service</artifactId>
+        </dependency>
+    </dependencies>
+```
+
+### 6 - order-container
+Terá dependência para todos os módulos:
+```
+        <dependency>
+            <groupId>com.food.ordering.system</groupId>
+            <artifactId>order-application</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.food.ordering.system</groupId>
+            <artifactId>order-dataaccess</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.food.ordering.system</groupId>
+            <artifactId>order-domain-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.food.ordering.system</groupId>
+            <artifactId>order-messaging</artifactId>
+        </dependency>
+```
+
+Atenção: ao final, rodar o comando: [mvn clean install], para verificar que não há problema entre as dependências
+
+TUDO OK...
+
+
+<h2>Degraph maven plugin</h2>
+A maven plugin that generates dependency graph in various formats (DOT, GML, PlantUML, JSON and Text)
+Fonte: https://github.com/ferstl/depgraph-maven-plugin
+
+Para utilizar esse recurso, é preciso instalar o graphviz
+Fonte: https://graphviz.org/download/
+
+Após a instalação do graphviz, rodar o comando: 
+```
+mvn com.github.ferstl:depgraph-maven-plugin:aggregate -DcreateImage=true -DreducesEdges=false -DclasspathScope=compile "-Dincludes=com.food.ordering.system*:*"
+```
+
+Será gerado um arquivo dependency-graph.png na pasta target do projeto: 
+![](C:\Sistemas\food-ordering-system\food-ordering-system\target\dependency-graph.png)
+NÃO ESTÁ MOSTRANDO AS DEPENDÊNCIAS CORRETAMENTE.. TO DO: Revisar
+
+
+<h2>DDD - Domain Driven Design</h2>
+
+Design orientado por domínio é uma abordagem para o desenvolvimento de software que centra o desenvolvimento na programação de um modelo de domínio.
+
+É especialmente útil para construir sistemas que tenham um domínio de negócios complexo.
+
+A ideia principal é separar o modelo de negócios da infraestrutura. Se você já assistiu a aula de introdução à arquitetura Hexagonal, você deve ter pegado a semelhança.
+
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\domain-driven-design-clean-architecture.png)
+
+Ambas, arquitetura Hexagonal e DDD colocam a lógica de domínio no centro do software e o torna independente do mundo exterior.
+
+Separar a lógica de domínio e a infraestrutura torna o software mais fácil de projetar, desenvolver, testar, construir e manter ao longo do tempo.
+
+Ele manterá a lógica do domínio estável e ajudará você a alterar os componentes da infraestrutura e a se adaptar facilmente às novas tecnologias.
+
+Existem dois lados do DDD, estratégico e tático.
+
+### Strategic DDD
+O DDD estratégico se concentra nas fronteiras do modelo de domínio e introduz a ideia de "Bounded Context - Single Bounded context" por domínio.
+
+O domínio em si, é a área operacional de um sistema, por exemplo, um aplicativo de pedidos de alimentos, e ele deve ter limites bem definidos dentro desse domínio.
+
+Esses limites são definidos usando o Bounded Context, e ajudará a agrupar as funcionalidades de um sistema.
+
+Um domínio pode ter um ou mais subdomínios dependendo da lógica do domínio.
+
+O próximo conceito importante que o DDD estratégico traz é a "Ubiquitous Language" (linguagem onipresente). Basicamente, define uma linguagem comum entre especialistas de domínio e desenvolvedores para que o sistema possa ser projetado, desenvolvido e evoluído com um ambiente de boa comunicação, contando com a contribuição do domínio.
+Resumindo:
+* What is a Domain? Operational area of your application. e.g;  Online food ordering
+* Bounded Context: Central pattern in DDD. Boundary within a Domain
+* Ubiquitous Language: Common language used by domain experts and developers
+
+### Tatical DDD
+O DDD tático, por outro lado, foca nos detalhes de implementação da lógica de domínio.
+
+#### Entidades
+Entidades são os principais objetos de domínio. Eles têm a lógica crítica de negócios. Uma entidade deve ter um único identificador. Esse identificador será atribuído a uma entidade quando o objeto é criado, e permanece inalterado ao longo da vida da entidade.
+Duas entidades com o mesmo identificador são consideradas o mesmo objeto, mesmo que todas as outras propriedades sejam diferentes.
+Da mesma forma, duas entidades são consideradas diferentes se seus identificadores forem diferentes, mesmo que todas as outras propriedades sejam iguais.
+
+Objetos de entidade são objetos mutáveis, pois executarão alguma lógica de negócios e atualizarão as propriedades com base sobre os cálculos. No entanto, isso não deve significar que você deve criar métodos "setter" para cada propriedade de uma entidade.
+
+Deve ter métodos de mudança de estado com nomes bem definidos usando os verbos corretos.
+
+#### Agregados
+O segundo conceito é agregado, que é um grupo de objetos de entidade que são logicamente relacionados. Por exemplo, você pode ter um agregado de processamento de pedido que inclui o Pedido, os Itens do Pedido e os Produtos associados a cada Item de Pedido.
+
+O importante com um agregado é que ele deve ser recuperado e armazenado como um todo, de forma consistente.
+
+Esses requisitos nos levam ao próximo conceito.
+
+#### Agregado raiz 
+Uma agregado raiz é responsável por manter os agregados em um estado consistente ao longo do tempo. Portanto, um agregado pertence a um agregado raiz e o identificador da raiz também identifica o agregado.
+
+A raiz agregada é responsável por impor invariantes de negócios.
+
+Uma coisa importante para ajudar manter o agregado em um estado consistente é que, de fora, os agregados só podem ser referenciados através do agregado raiz. Portanto, todas as operações de alteração de estado devem passar pela entidade raiz (agregado raiz), mesmo que a mudança de estado esteja relacionada com uma das outras entidades agregadas.
+
+As entidades que não sejam a rota agregada não podem ser referenciadas por objetos externos.
+
+Então, quando você tiver concluído todas as operações de mudança de estado de um agregado, antes de salvar os dados, você deve impor validações para manter a agregação em estado consistente.
+
+Também aplicar restrições de armazenamento de dados para realizar Optimistic Locking (controle de simultaneidade otimista) evitará a perda ou corrupção de dados:
+- O controle de simultaneidade otimista, também conhecido como bloqueio otimista, é um método de controle de simultaneidade aplicado a sistemas transacionais, como sistemas de gerenciamento de banco de dados relacional e memória transacional de software.
+
+Para decidir qual entidade será a agregada raiz você deve considerar:
+- se a entidade pode ser modificada independentemente; e 
+- se a entidade pode ser acessada de fora, diretamente por outro agreado.
+
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\agreggate-design.png)
+
+#### VO - Value Object
+Objetos de valor são usados para trazer contexto ao valor. Por exemplo, para manter o preço de um pedido, você pode pensar que ter um  campo Big Decimal é suficiente, ou que para manter um identificador de uma entidade, um campo UUID seja suficiente.
+
+No entanto, esse campo Big Decimal ou UUID não informam nada sobre o domínio, quando você olha para eles pela primeira vez dentro de um objeto.
+
+Quando você, como desenvolvedor ou especialista em domínio, analisa um objeto de domínio, deve ser óbvio dizer qual campo é usado para qual propósito.
+
+Então, ao criar um VO com uma classe chamada Money e manter um campo interno Big Decimal, você pode simplesmente usar este objeto de valor Money como o tipo da propriedade preço. Ou para o campo UUID, se você criar um objeto de valor chamado OrderId e manter um campo UUID dentro, você pode usá-lo como identificador do objeto de domínio Order.
+
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\value-objects-sample.png)
+
+Ao fazer isso, você terá vários benefícios:
+- Primeiro, como mencionado, você traz contexto para o valor. 
+- Em segundo lugar, você pode ter operações comerciais no objeto de valor com métodos, se necessário. 
+- E terceiro, você pode validar o valor do objeto ao criar o VO no construtor.
+
+Uma característica importante do objeto de valor é que ele é imutável. Isso significa que, quando você cria uma vez, não pode alterar seu valor.
+
+Se você deseja alterar o valor, basta criar um novo objeto de valor com o valor atualizado.
+
+Graças a esse valor de imutabilidade, os objetos são intercambiáveis. Isso significa que você pode usar dois objetos de valor diferentes com o mesmo valor para a mesma finalidade.
+
+#### Domain Events
+Eventos de domínio são excelentes ferramentas para desacoplar os domínios que estão em diferentes "Bounded Contexts".
+
+Como em todo sistema que depende de eventos, os eventos de domínio levarão a um sistema eventual consistente.
+
+Então você executa alguma lógica de negócios em um domínio por meio das regras agregadas, após salvar suas alterações, você pode disparar alguns eventos para notificar os outros contextos.
+
+Do mesmo jeito, se você deseja executar uma lógica de negócios com base em um evento de outro domínio, você pode criar um "listener" desse evento de domínio e consumi-lo em algum momento.
+
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\domain-events.png)
+
+O importante ao distribuir e consumir eventos, é ter um sistema com uma operação de retentativa.
+
+Para este propósito, uma fila de mensagens ou um log de eventos será uma ótima combinação na implementação de eventos de domínio.
+
+Usarei o Kafka como armazenamento de log de eventos, o que também permitirá ver os históricos de eventos para novos listeners.
+
+Isso é chamado de Event Sourcing, onde você mantém o estado de um sistema como um log ordenado por eventos.
+
+
+#### Domain Service
+Um serviço de domínio coordena a lógica de negócios que abrange vários agregados. Além disso, podemos colocar métodos de lógica de negócios no serviço de domínio se o método não se encaixar logicamente em uma entidade.
+
+O serviço de domínio também pode se comunicar com outros serviços de domínio, se necessário.
+
+Observe que o serviço de domínio ainda está no núcleo da lógica de domínio, portanto, não pode ser acessado de fora.
+
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\domain-service.png)
+
+E para se comunicar com a lógica externa do domínio, estamos chegando aos Application Services.
+
+
+#### Application Services
+
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\application-services.png)
+
+Esses são os serviços que expõem os métodos de domínio necessários para o exterior. Portanto, você deve ter uma interface com os métodos que os objetos externos exigem e expor essa interface.
+
+Em seguida, você precisa implementar esse serviço de aplicativo e aceitar as solicitações.
+
+O Application Services deve ser o local para criar e gerenciar transações, para impor requisitos de segurança, e carregar e salvar o estado do domínio de e para o armazenamento de dados usando repositórios.
+
+Portanto, você precisará ter os dados para executar alguma lógica de negócios.
+
+Mas nem o Service Domain nem as Entities carregarão esses dados ou salvarão os dados após alterá-los. É responsabilidade do serviço de aplicativo obter os dados e passar para o Domain Service ou Entity.
+
+Uma coisa importante é que o Application Service não deve ter nenhuma lógica de negócios. Isso é uma responsabilidade do serviço de domínio e das entidades.
+
+Em relação aos eventos de domínio, um "listener" de eventos de domínio pode ser considerado um tipo especial de Application Service. A única diferença é que, Domain Event Listeners (special kind of Application Service that triggered by Domain Events) não são acionados por um usuário final, mas pelos eventos de domínio.
+
+Portanto, o "listener" de evento de domínio será o primeiro evento de domínio de destino de pontos de contato recebido e ele organizará e chamará ao Service Domain relacionado para esse tratamento de eventos que organizará internamente  e chamou entidades para executar a lógica de negócios.
+
+Finalmente, gostaria de sugerir os dois grandes livros sobre DDD:
+- DDD - Erick Evans
+- DDD - Vaughn Verngn
+
+
+<h2>Definição da lógica de domínio de Order Service.</h2>
+Vou criar o agregado Order Processing Aggregate.
+
+Primeiro, criarei uma classe de Order e a tornarei a raiz agregada. Então, usarei a entidade order para garantir os invariantes de negócios.
+
+#### Order
+Vamos pensar em quais campos devemos precisar em uma entidade Order, nossa raiz do agregado (Aggregate root):
+- OrderId orderId;
+- CustomerId customerId;
+- RestauranteId restaurantId;
+- StreetAddress deliveryAddress;
+- Money price;
+- List<OrderItem> items; ...esse atributo será um agregado de Order.
+- TrackingId trackingId: mais um VO. Será usado para consultar o status do pedido para que não precisemos expor o campo OrderId;
+- OrderStatus orderStatus; ...esse atributo será um enum, contendo: PENDING, PAID, APPROVED, CANCELLING, CANCELLED.
+- List<String> FailureMessages;
+
+Primeiro, adicionarei o identificador do pedido com um campo de id do pedido. Como mencionado anteriormente, usarei VO para manter os campos para trazer contexto aos valores.
+
+Portanto, para o ID do pedido, criarei um objeto de valor OrderId e manterei um campo UUID dentro dele.
+
+Como um cliente criará esse pedido, também adicionarei o campo customerId. Para este campo, criarei novamente um objeto de valor e manterei um campo UUID.
+
+Então preciso relacionar o pedido com o restaurante que a comida será enviada, por isso, eu também preciso de um restaurantId. Este será novamente um objeto de valor com um campo UUID.
+
+Então eu preciso do endereço de entrega. Para isso, vou definir outro VO "StreetAddress".
+
+Em StreetAddress, vou definir 4 campos:
+- UUID id;
+- String street;
+- String postalCode;
+- String city;
+
+Preciso manter o preço do pedido e para isso, usarei outro objeto de valor chamado Money.
+
+Dentro do objeto de valor Money, manterei um campo de quantidade BigDecimal.
+- amount
+
+Então terei a lista de itens do pedido. Portanto, vou precisar de outra classe, OrderItem, que será outra entidade.
+
+#### OrderItem
+Conterá os seguintes campos:
+- OrderItemId orderItemId: como um VO.
+- OrderId orderId: para relacionar o item do pedido com o pedido.
+- Product product: para relacionar as informações do produto com o item do pedido. 
+
+Essa classe de produto deve ser outra entidade, pois representa um objeto de negócios com um identificador exclusivo.
+(continuando...)
+- Integer quantity;
+- Money price: Money será um VO responsável por cálculos financeiros básicos;
+- Money subtotal: basicamente, o multiplicador de quantitiy * price deve fornecer o subtotal de um item do pedido.
+
+
+#### Product
+Conterá os seguintes campos:
+- String name;
+- Money price;
+
+
+Continuando com a implementação da raiz agregada Order, adicionarei um campo VO trackingId,
+
+Em seguida, adicionarei o objeto de valor OrderStatus à entidade do pedido. Um enum com os valores: Pendente, Pago, Aprovado, Cancelando e Cancelados.
+
+Por fim, adicionarei uma lista de String na entidade do pedido, para manter as mensagens de falha. Isso será útil para coletar as mensagens de falha de outros agregados durante a lógica de negócios e retornar ao serviço de chamadas.
+
+Além disso, para completar a lógica de negócios, também precisarei de mais duas entidades de outros agregados, cliente e restaurante.
+
+
+#### Customer (agreggate root)
+Para agregação de clientes, terei uma única entidade Client e terei apenas um campo customerId. Vou usar isso apenas para verificar se um cliente existe ou não.
+- CustomerId customerId
+
+Portanto, não preciso adicionar outros campos aqui por enquanto.
+
+Em seguida, criarei a entidade Restaurante também no domínio principal do serviço de pedidos.
+
+#### Restaurant (agreggate root)
+Esta será outra raiz agregada, e usarei isso para obter as informações sobre os produtos e usá-las na lógica de negócios de uma operação de pedido.
+Campos de Restaurant
+- RestaurantId restaurantId;
+- List<Products> products: usamos a entidade de produto compartilhada, para agregar pedidos e agregar restaurantes, na lógica do negócio.
+- Boolean active: apenas para verificar se o restaurante está ativo para concluir o pedido ou não.
+
+
+### Domain Events (possibilidades)
+Agora, finalmente, definirei os possíveis eventos de domínio que podem ser gerados no serviço de pedidos.
+
+#### OrderCreatedEvent
+- Order order: uma referência para a entidade do pedido;
+- ZonedDateTime createdAt: data e hora de criação do pedido.
+**ATENÇÃO:** observe que para ZonedDateTime não será criado um VO, porque ele já é de fato um VO, definido na JDK (CTRL + clique para acessar a implementação de ZonedDateTime).
+
+Evento criado quando um cliente aciona uma operação de processamento de pedidos.
+Quando eu crio este evento, o status do pedido estará no estado PENDING (pendente), pois esta é a primeira etapa do processo do pedido.
+
+#### OrderPaidEvent
+- Order order: uma referência para a entidade do pedido;
+- ZonedDateTime createdAt: data e hora de pagamento do pedido.
+
+Este evento deve ser acionado quando o pagamento de um pedido for concluído. Portanto, o status do pedido será PAID (pago) neste caso.
+
+
+#### OrderCancelledEvent
+- Order order: uma referência para a entidade do pedido;
+- ZonedDateTime createdAt: data e hora de cancelamento do pedido.
+
+Este evento deve ser acionado se o pagamento ou a aprovação do pedido (pelo restaurante) falharem.
+
+#### Order methods
+Agora, finalmente, também escreverei os métodos de lógica de domínio para a entidade de ordem.
+- validateOrder();
+- initializeOrder();
+- pay();
+- approve();
+- initCancell();
+- cancel();
+
+Resultado final da lógica de domínio:
+
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\order-service-domain-logic-oncourse.png)
+
+Então, primeiro vou validar e inicializar um pedido em estado pendente. Então chamarei os métodos de mudança de estado para processamento de pedidos.
+
+Quando o pedido for pago, vou chamar o método pay(), quando o pedido for aprovado eu vou chamar o método approve(). Se houver um cancelamento, primeiro definirei o estado para initCancell() e, finalmente, cancelarei o pedido com o método cancel().
+
+
+<h1>Implementação de Order Service</h1>
+

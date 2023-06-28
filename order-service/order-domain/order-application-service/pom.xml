@@ -12,8 +12,11 @@
 
     <artifactId>order-application-service</artifactId>
 
-    <properties>
-
-    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>com.food.ordering.system</groupId>
+            <artifactId>order-domain-core</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>
