@@ -58,7 +58,7 @@ public class Order extends AggregateRoot<OrderId> {
 
     // Validate the initial order, it's total price and items prices.
     // Here we start to work with personalized exceptions.
-    private void validateOrder() {
+    public void validateOrder() {
         valiateInitialOrder();
         validateTotalPrice();
         validateItemsPrice();
