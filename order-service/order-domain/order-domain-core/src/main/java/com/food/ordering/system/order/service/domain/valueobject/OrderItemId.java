@@ -4,7 +4,7 @@ import com.food.ordering.system.domain.valueobject.BaseId;
 
 // UUID is not necessary here because Long is enough to guarantee uniqueness
 public class OrderItemId extends BaseId<Long> {
-    protected OrderItemId(Long value) {
+    public OrderItemId(Long value) {
         super(value);
     }
 }

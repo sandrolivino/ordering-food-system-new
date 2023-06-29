@@ -43,6 +43,19 @@ public class OrderItem extends BaseEntity<OrderItemId> {
         return subtotal;
     }
 
+    // Initiaizes an item. Attention: without the access modifier this method becomes private.
+    void initializeOrderItem(OrderId orderId, OrderItemId orderItemId) {
+        this.orderId = orderId;
+        super.setId(orderItemId);
+    }
+
+    // Verify that the order item price is correct according to the product price.
+    boolean isPriceValid() {
+        return price.isGreaterThanZero()
+                && price.equals(product.getPrice())
+                && price.multiply(quantity).equals(subtotal);
+    }
+
     public static final class Builder {
         private OrderItemId orderItemId;
         private Product product;

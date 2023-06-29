@@ -8,6 +8,8 @@ public class Money {
     // It's final (immutable), so I need to set the value for amount in constructor.
     private final BigDecimal amount;
 
+    public static final Money ZERO = new Money(BigDecimal.ZERO);
+
     // Constructor
     public Money(BigDecimal amount) {
         this.amount = amount;
