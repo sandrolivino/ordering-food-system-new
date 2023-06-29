@@ -787,6 +787,8 @@ Campos de Restaurant
 ### Domain Events (possibilidades)
 Agora, finalmente, definirei os possíveis eventos de domínio que podem ser gerados no serviço de pedidos.
 
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\order-state-transitions.png)
+
 #### OrderCreatedEvent
 - Order order: uma referência para a entidade do pedido;
 - ZonedDateTime createdAt: data e hora de criação do pedido.

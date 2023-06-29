@@ -64,6 +64,30 @@ public class Order extends AggregateRoot<OrderId> {
         validateItemsPrice();
     }
 
+    private void valiateInitialOrder() {
+        // Status and id should be null at this point
+        if (orderStatus != null || getId() != null) {
+            // This exception should be created in the order.service.domain.exception package
+            throw new OrderDomainException("Order is not in correct state for initialization");
+        }
+    }
+
+    // Check if price is not null and greater than zero
+    private void validateTotalPrice() {
+        if (price == null || !price.isGreaterThanZero()) {
+            throw new OrderDomainException("Total price must be greater than zero!");
+        }
+    }
+
+    // Validate the item price looking at the Product price.
+    private void validateItemPrice(OrderItem orderItem) {
+        if(!orderItem.isPriceValid()) {
+            throw new OrderDomainException("Order item price: " + orderItem.getPrice().getAmount()
+                    + " is not valid for product " + orderItem.getProduct().getName() + "!");
+            // TODO there's no getValue method here: orderItem.getProduct().getId().getValue(). CHECK
+        }
+    }
+
     // Validate if the total price and items prices sum (subtotal) are the same.
     private void validateItemsPrice() {
         Money orderItemsTotal = items.stream().map(orderItem -> {
@@ -77,30 +101,56 @@ public class Order extends AggregateRoot<OrderId> {
         }
     }
 
-    // Validate the item price looking at the Product price.
-    private void validateItemPrice(OrderItem orderItem) {
-        if(!orderItem.isPriceValid()) {
-            throw new OrderDomainException("Order item price: " + orderItem.getPrice().getAmount()
-                    + " is not valid for product " + orderItem.getProduct().getName() + "!");
-            // TODO there's no getValue method here: orderItem.getProduct().getId().getValue(). CHECK
+    // Change order status to PAID
+    public void pay() {
+        if(orderStatus != OrderStatus.PENDING) {
+            throw new OrderDomainException("Order is not in correct state for pay operation!");
+        }
+        orderStatus = OrderStatus.PAID;
+    }
+
+    // Change order status to APPROVED
+    public void approved(){
+        if(orderStatus != OrderStatus.PAID) {
+            throw new OrderDomainException("Order is not in correct state for approve operation!");
+        }
+        orderStatus = OrderStatus.APPROVED;
+    }
+
+    // Change order status to CANCELLING. This is an example of Compensating Transaction
+    // We should include a failureMessage list obteined from the other services
+    public void initCancel(List<String> failureMessages){
+        if(orderStatus != OrderStatus.PAID) {
+            throw new OrderDomainException("Order is not in correct state for initCancel operation!");
+        }
+        orderStatus = OrderStatus.CANCELLING;
+
+        updateFailureMessages(failureMessages);
+    }
+
+    // Change order status to CANCEL. This is an example of Compensating Transaction
+    // We should include a failureMessage list obteined from the other services
+    public void cancel(List<String> failureMessages){
+        if(orderStatus != OrderStatus.CANCELLING || orderStatus != OrderStatus.PENDING) {
+            throw new OrderDomainException("Order is not in correct state for cancel operation!");
+        }
+        orderStatus = OrderStatus.CANCELLED;
+
+        updateFailureMessages(failureMessages);
+    }
+
+    // Update failure messages
+    private void updateFailureMessages(List<String> failureMessages) {
+        if(this.failureMessages != null && failureMessages != null){
+            this.failureMessages.addAll(failureMessages.stream().filter(message -> !message.isEmpty()).toList());
+        }
+        if (this.failureMessages == null){
+            this.failureMessages = failureMessages;
         }
     }
 
-    // Check if price is not null and greater than zero
-    private void validateTotalPrice() {
-        if (price == null || !price.isGreaterThanZero()) {
-            throw new OrderDomainException("Total price must be greater than zero!");
-        }
-    }
 
-    private void valiateInitialOrder() {
-        // Status and id should be null at this point
-        if (orderStatus != null || getId() != null) {
-            // This exception should be created in the order.service.domain.exception package
-            throw new OrderDomainException("Order is not in correct state for initialization");
-        }
-    }
-
+    // Getters methods
     public CustomerId getCustomerId() {
         return customerId;
     }
