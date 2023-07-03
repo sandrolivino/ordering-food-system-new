@@ -171,7 +171,7 @@ public class Order extends AggregateRoot<OrderId> {
         return items;
     }
 
-    public TrackingId getTrackingId() {
+    public @jakarta.validation.constraints.NotNull UUID getTrackingId() {
         return trackingId;
     }
 
