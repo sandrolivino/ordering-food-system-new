@@ -60,10 +60,10 @@ public class OrderItem extends BaseEntity<OrderItemId> {
         private OrderItemId orderItemId;
         private Product product;
         private int quantity;
-        private Money price;
+        public Money price;
         private Money subtotal;
 
-        private Builder() {
+        public Builder() {
         }
 
         // Renamed from newBuilder to "builder" just to make it simpler

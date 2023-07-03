@@ -1,6 +1,7 @@
 package com.food.ordering.system.orderservice.domain.dto.create;
 
 import com.food.ordering.system.domain.valueobject.OrderStatus;
+import com.food.ordering.system.order.service.domain.valueobject.TrackingId;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CreateOrderResponse {
     @NotNull
-    private final UUID orderTrackingId;
+    private final TrackingId orderTrackingId;
 
     @NotNull
     private final OrderStatus orderStatus;

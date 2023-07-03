@@ -195,7 +195,7 @@ public class Order extends AggregateRoot<OrderId> {
         private OrderStatus orderStatus;
         private List<String> failureMessages;
 
-        private Builder() {
+        public Builder() {
         }
 
         // Renamed from newBuilder to "builder" just to make it simpler
