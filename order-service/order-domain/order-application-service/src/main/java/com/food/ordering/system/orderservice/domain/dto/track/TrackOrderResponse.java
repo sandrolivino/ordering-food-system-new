@@ -20,4 +20,43 @@ public class TrackOrderResponse {
     private final OrderStatus orderStatus;
 
     private final List<String> failureMessages;
+
+    private TrackOrderResponse(Builder builder) {
+        orderTrackingId = builder.orderTrackingId;
+        orderStatus = builder.orderStatus;
+        failureMessages = builder.failureMessages;
+    }
+
+
+    private static final class Builder {
+        private @NotNull UUID orderTrackingId;
+        private @NotNull OrderStatus orderStatus;
+        private List<String> failureMessages;
+
+        public Builder() {
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public Builder orderTrackingId(@NotNull UUID val) {
+            orderTrackingId = val;
+            return this;
+        }
+
+        public Builder orderStatus(@NotNull OrderStatus val) {
+            orderStatus = val;
+            return this;
+        }
+
+        public Builder failureMessages(List<String> val) {
+            failureMessages = val;
+            return this;
+        }
+
+        public TrackOrderResponse build() {
+            return new TrackOrderResponse(this);
+        }
+    }
 }
