@@ -170,6 +170,14 @@ Então, por enquanto, vou desenhar o atendimento ao cliente aqui com um banco de
 ## Kafka: Data flow do serviço de Pedidos.
 Os serviços produzirão e consumirão eventos para se comunicarem entre si e eles usarão Kafka para enviar e receber esses eventos.
 
+### Arquitetura do Kafka
+
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\kafka-architecture.png)
+
+### Componentes auxiliares do Kafka (Zookeeper and Schema Registry)
+![](C:\Sistemas\food-ordering-system\food-ordering-system\project-design\kafka-zookeper-schemaRegistry.png)
+
+### Configurando o Kafka com Docker
 Em primeiro lugar, para concluir um processo de pedido, a primeira comunicação deve ser entre o serviço de pedidos (Order Service) e o serviço de pagamento (Payment Service). Então devem ser criados dois tópicos Kafka entre eles:
 - payment-request-topic
 - payment-response-topic
