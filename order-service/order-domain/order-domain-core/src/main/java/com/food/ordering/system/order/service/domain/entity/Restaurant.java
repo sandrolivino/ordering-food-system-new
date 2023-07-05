@@ -7,7 +7,7 @@ import java.util.List;
 
 public class Restaurant extends AggregateRoot<RestaurantId> {
     private final List<Product> products;
-    private final boolean active;
+    private boolean active;
 
     private Restaurant(Builder builder) {
         super.setId(builder.restaurantId);
@@ -15,6 +15,9 @@ public class Restaurant extends AggregateRoot<RestaurantId> {
         active = builder.active;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
 
     public List<Product> getProducts() {
         return products;
@@ -29,11 +32,7 @@ public class Restaurant extends AggregateRoot<RestaurantId> {
         private List<Product> products;
         private boolean active;
 
-        public Builder() {
-        }
-
-        public static Builder builder() {
-            return new Builder();
+        private Builder() {
         }
 
         public Builder restaurantId(RestaurantId val) {

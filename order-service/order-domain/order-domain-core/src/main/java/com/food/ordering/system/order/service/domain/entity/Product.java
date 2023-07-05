@@ -4,17 +4,21 @@ import com.food.ordering.system.domain.entity.BaseEntity;
 import com.food.ordering.system.domain.valueobject.Money;
 import com.food.ordering.system.domain.valueobject.ProductId;
 
-// It's not necessary override equals and hashcode because its already made in the base class BaseEntity
 public class Product extends BaseEntity<ProductId> {
     private String name;
     private Money price;
+
+    public Product(ProductId productId, String name, Money price) {
+        super.setId(productId);
+        this.name = name;
+        this.price = price;
+    }
 
     public Product(ProductId productId) {
         super.setId(productId);
     }
 
-    public Product(ProductId productId, String name, Money price) {
-        super.setId(productId);
+    public void updateWithConfirmedNameAndPrice(String name, Money price) {
         this.name = name;
         this.price = price;
     }
@@ -25,10 +29,5 @@ public class Product extends BaseEntity<ProductId> {
 
     public Money getPrice() {
         return price;
-    }
-
-    public void updateWithConfirmedNameAndPrice(String name, Money price) {
-        this.name = name;
-        this.price = price;
     }
 }

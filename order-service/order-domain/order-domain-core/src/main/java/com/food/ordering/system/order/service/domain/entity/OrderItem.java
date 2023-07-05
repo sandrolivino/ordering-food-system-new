@@ -6,22 +6,35 @@ import com.food.ordering.system.domain.valueobject.OrderId;
 import com.food.ordering.system.order.service.domain.valueobject.OrderItemId;
 
 public class OrderItem extends BaseEntity<OrderItemId> {
-    // It can't be final because can be updated later during the business logic
     private OrderId orderId;
     private final Product product;
     private final int quantity;
     private final Money price;
-    private final Money subtotal;
+    private final Money subTotal;
 
-    // This constructor is now private
-    // Because of this we need the public method builder() to instantiate a new OrderItem
+    void initializeOrderItem(OrderId orderId, OrderItemId orderItemId) {
+        this.orderId = orderId;
+        super.setId(orderItemId);
+    }
+
+    boolean isPriceValid() {
+        return price.isGreaterThanZero() &&
+                price.equals(product.getPrice()) &&
+                price.multiply(quantity).equals(subTotal);
+    }
+
     private OrderItem(Builder builder) {
         super.setId(builder.orderItemId);
         product = builder.product;
         quantity = builder.quantity;
         price = builder.price;
-        subtotal = builder.subtotal;
+        subTotal = builder.subTotal;
     }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
 
     public OrderId getOrderId() {
         return orderId;
@@ -39,36 +52,18 @@ public class OrderItem extends BaseEntity<OrderItemId> {
         return price;
     }
 
-    public Money getSubtotal() {
-        return subtotal;
-    }
-
-    // Initiaizes an item. Attention: without the access modifier this method becomes private.
-    void initializeOrderItem(OrderId orderId, OrderItemId orderItemId) {
-        this.orderId = orderId;
-        super.setId(orderItemId);
-    }
-
-    // Verify that the order item price is correct according to the product price.
-    boolean isPriceValid() {
-        return price.isGreaterThanZero()
-                && price.equals(product.getPrice())
-                && price.multiply(quantity).equals(subtotal);
+    public Money getSubTotal() {
+        return subTotal;
     }
 
     public static final class Builder {
         private OrderItemId orderItemId;
         private Product product;
         private int quantity;
-        public Money price;
-        private Money subtotal;
+        private Money price;
+        private Money subTotal;
 
-        public Builder() {
-        }
-
-        // Renamed from newBuilder to "builder" just to make it simpler
-        public static Builder builder() {
-            return new Builder();
+        private Builder() {
         }
 
         public Builder orderItemId(OrderItemId val) {
@@ -91,8 +86,8 @@ public class OrderItem extends BaseEntity<OrderItemId> {
             return this;
         }
 
-        public Builder subtotal(Money val) {
-            subtotal = val;
+        public Builder subTotal(Money val) {
+            subTotal = val;
             return this;
         }
 

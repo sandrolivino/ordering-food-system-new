@@ -13,72 +13,60 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 
-// We will add login in this class. For that we need add slf4j dependency
 @Slf4j
 public class OrderDomainServiceImpl implements OrderDomainService {
-    public final static String UTC = "UTC";
+
+    private static final String UTC = "UTC";
+
     @Override
     public OrderCreatedEvent validateAndInitiateOrder(Order order, Restaurant restaurant) {
         validateRestaurant(restaurant);
         setOrderProductInformation(order, restaurant);
         order.validateOrder();
         order.initializeOrder();
-
-        // TODO Again. There's no getValue() method here
-        log.info("Order with id: {} is initiated", order.getId());
-
-        // Use of Universal Time Coordinated (UTC)
+        log.info("Order with id: {} is initiated", order.getId().getValue());
         return new OrderCreatedEvent(order, ZonedDateTime.now(ZoneId.of(UTC)));
     }
 
     @Override
     public OrderPaidEvent payOrder(Order order) {
         order.pay();
-
-        log.info("Order with id: {} is paid", order.getId());
-
+        log.info("Order with id: {} is paid", order.getId().getValue());
         return new OrderPaidEvent(order, ZonedDateTime.now(ZoneId.of(UTC)));
     }
 
     @Override
     public void approveOrder(Order order) {
-        order.approved();
-
-        log.info("Order with id: {} is approved", order.getId());
-
-        // This method returns no event because it's in the last part of process.
+        order.approve();
+        log.info("Order with id: {} is approved", order.getId().getValue());
     }
 
     @Override
     public OrderCancelledEvent cancelOrderPayment(Order order, List<String> failureMessages) {
         order.initCancel(failureMessages);
-
-        log.info("Order payment is cancelling for order with id: {}", order.getId());
-
+        log.info("Order payment is cancelling for order id: {}", order.getId().getValue());
         return new OrderCancelledEvent(order, ZonedDateTime.now(ZoneId.of(UTC)));
     }
 
     @Override
     public void cancelOrder(Order order, List<String> failureMessages) {
         order.cancel(failureMessages);
-
-        log.info("Order with id: {} is cancelled", order.getId());
+        log.info("Order with id: {} is cancelled", order.getId().getValue());
     }
 
-    // Validates if a Restaurant is active
     private void validateRestaurant(Restaurant restaurant) {
         if (!restaurant.isActive()) {
-            throw new OrderDomainException("Restaurant with id {} "
-                    + restaurant.getId() + " is not active!");
+            throw new OrderDomainException("Restaurant with id " + restaurant.getId().getValue() +
+                    " is currently not active!");
         }
     }
 
-    // Search items among restaurant products and up to date with name and price
     private void setOrderProductInformation(Order order, Restaurant restaurant) {
         order.getItems().forEach(orderItem -> restaurant.getProducts().forEach(restaurantProduct -> {
             Product currentProduct = orderItem.getProduct();
             if (currentProduct.equals(restaurantProduct)) {
-                currentProduct.updateWithConfirmedNameAndPrice(restaurantProduct.getName(), restaurantProduct.getPrice());
+                currentProduct.updateWithConfirmedNameAndPrice(restaurantProduct.getName(),
+                        restaurantProduct.getPrice());
             }
         }));
     }
