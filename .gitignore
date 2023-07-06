@@ -51,3 +51,8 @@ tmp/
 local.properties
 .loadpath
 .factorypath
+
+##############################
+## Docker
+##############################
+docker-compose/
