@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 @Component
 public class OrderMessagingDataMapper {
+
     public PaymentRequestAvroModel orderCreatedEventToPaymentRequestAvroModel(OrderCreatedEvent orderCreatedEvent) {
         Order order = orderCreatedEvent.getOrder();
         return PaymentRequestAvroModel.newBuilder()
